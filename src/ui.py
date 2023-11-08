@@ -8,9 +8,10 @@ from src.chunker import Chunker
 from src.state import State
 
 app_state = State()
-cb = Chatbot(app_state)
-chunker = Chunker(app_state)
 db = Astra(app_state)
+cb = Chatbot(app_state, db)
+chunker = Chunker(app_state)
+
 
 def user_chatbot(user_message, history):
     return "", history + [[user_message, None]]
@@ -123,7 +124,6 @@ with gr.Blocks() as playground:
         *Note that if you change the embedding model you need to create a new table
         or delete the existing table.*            
         """)
-        table_name = gr.Textbox(label="Table name", value="embeddings_table")
         add_chunks_btn = gr.Button(value="Add Chunks")
 
         with gr.Accordion("Danger Zone", open=False):
@@ -132,7 +132,7 @@ with gr.Blocks() as playground:
         # store tab actions
         chunking_choice.change(on_chunking_choice_change, chunking_choice)
         chunk_btn.click(chunker.chunk, [chunk_size, overlap], show_chunks)
-        delete_btn.click(db.delete_table, table_name)
+        delete_btn.click(db.delete_table)
 
        
     with gr.Tab("Retrieve"):
@@ -162,12 +162,11 @@ with gr.Blocks() as playground:
     # cross tab actions
     textbox.submit(user_chatbot, [textbox, chatbox], [textbox, chatbox], queue=False).then(
         cb.respond, 
-        [chatbox, prompt, llm_choice, llm_api_key, embedding_choice, embedding_api_key, table_name], 
+        [chatbox, prompt, llm_choice, llm_api_key, embedding_choice, embedding_api_key], 
         chatbox
     )
     
     llm_choice.change(on_llm_choice_change, llm_choice, [llm_openai_params])
     embedding_choice.change(on_embedding_choice_change, embedding_choice, [embedding_openai_params])
 
-    add_chunks_btn.click(db.store_chunks, 
-                        [table_name, embedding_choice, embedding_api_key])
+    add_chunks_btn.click(db.store_chunks, [embedding_choice, embedding_api_key])

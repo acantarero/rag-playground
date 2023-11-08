@@ -45,13 +45,19 @@ def on_llm_choice_change(llm_choice):
         }
     
 def on_embedding_choice_change(embedding_choice):
-    if embedding_choice == "openai":
+    if embedding_choice in [
+        "openai",
+        "cohere_english_3",
+        "cohere_english_light_3",
+        "cohere_multilingual_3",
+        "cohere_multilingual_light_3",
+    ]:
         return {
-            embedding_openai_params: gr.Row(visible=True),
+            embedding_api_params: gr.Row(visible=True),
         }
     else:
         return {
-            embedding_openai_params: gr.Row(visible=False),
+            embedding_api_params: gr.Row(visible=False),
         }
     
 def on_chunking_choice_change(chunking_choice):
@@ -160,12 +166,18 @@ with gr.Blocks() as playground:
 
         embedding_choice = gr.Dropdown(
             label="Embedding model", 
-            choices=[("OpenAI - text-embedding-ada-002", "openai")], 
+            choices=[
+                ("OpenAI - text-embedding-ada-002", "openai"),
+                ("Cohere - embed-english-v3.0", "cohere_english_3"),
+                ("Cohere - embed-english-light-v3.0", "cohere_english_light_3"),
+                ("Cohere - embed-multilingual-v3.0", "cohere_multilingual_3"),
+                ("Cohere - embed-multilingual-light-v3.0", "cohere_multilingual_light_3"),
+            ], 
             type="value",
         )
 
-        with gr.Row(visible=False) as embedding_openai_params:
-            embedding_api_key = gr.Textbox(label=f"OpenAI API Key", lines=1)
+        with gr.Row(visible=False) as embedding_api_params:
+            embedding_api_key = gr.Textbox(label=f"API Key", lines=1)
 
 
     # cross tab actions
@@ -176,6 +188,6 @@ with gr.Blocks() as playground:
     )
     
     llm_choice.change(on_llm_choice_change, llm_choice, [llm_params])
-    embedding_choice.change(on_embedding_choice_change, embedding_choice, [embedding_openai_params])
+    embedding_choice.change(on_embedding_choice_change, embedding_choice, [embedding_api_params])
 
     add_chunks_btn.click(db.store_chunks, [embedding_choice, embedding_api_key])

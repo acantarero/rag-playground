@@ -1,7 +1,7 @@
 import cassio
 from langchain.vectorstores import Cassandra
 from langchain.schema.embeddings import Embeddings
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import CohereEmbeddings, OpenAIEmbeddings
 
 import gradio as gr
 
@@ -42,6 +42,37 @@ class Astra:
             except Exception as e:
                 logger.warning(f"{e}")
                 raise ValueError("Invalid OpenAI API key.")
+
+        # TODO: support for v3 cohere models has been merged to langchain master
+        #       but not in the module yet  
+        elif embedding_model == "cohere_english_3":
+            try:
+                return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-english-v3.0")
+            except Exception as e:
+                logger.warning(f"{e}")
+                raise ValueError("Invalid Cohere API key.")
+            
+        elif embedding_model == "cohere_english_light_3":
+            try:
+                return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-english-light-v3.0")
+            except Exception as e:
+                logger.warning(f"{e}")
+                raise ValueError("Invalid Cohere API key.")
+            
+        elif embedding_model == "cohere_multilingual_3":
+            try:
+                return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-multilingual-v3.0")
+            except Exception as e:
+                logger.warning(f"{e}")
+                raise ValueError("Invalid Cohere API key.")
+            
+        elif embedding_model == "cohere_multilingual_light_3":
+            try:
+                return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-multilingual-light-v3.0")
+            except Exception as e:
+                logger.warning(f"{e}")
+                raise ValueError("Invalid Cohere API key.")
+            
         else:
             raise ValueError(f"Invalid embedding model. Set on models tab.")
 

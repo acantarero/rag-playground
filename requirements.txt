@@ -8,6 +8,7 @@ aiofiles==23.2.1
     # via gradio
 aiohttp==3.8.6
     # via
+    #   cohere
     #   langchain
     #   openai
 aiosignal==1.3.1
@@ -31,6 +32,8 @@ attrs==23.1.0
     #   aiohttp
     #   jsonschema
     #   referencing
+backoff==2.2.1
+    # via cohere
 cassandra-driver==3.28.0
     # via cassio
 cassio==0.1.3
@@ -52,6 +55,8 @@ click==8.1.7
     #   geomet
     #   typer
     #   uvicorn
+cohere==4.32
+    # via -r requirements.in
 colorama==0.4.6
     # via typer
 contourpy==1.1.1
@@ -68,6 +73,8 @@ exceptiongroup==1.1.3
     # via anyio
 fastapi==0.104.1
     # via gradio
+fastavro==1.8.2
+    # via cohere
 ffmpy==0.3.1
     # via gradio
 filelock==3.13.1
@@ -110,6 +117,8 @@ idna==3.4
     #   httpx
     #   requests
     #   yarl
+importlib-metadata==6.8.0
+    # via cohere
 importlib-resources==6.1.0
     # via
     #   gradio
@@ -130,7 +139,7 @@ justext==3.0.0
     # via trafilatura
 kiwisolver==1.4.5
     # via matplotlib
-langchain==0.0.329
+langchain==0.0.331
     # via -r requirements.in
 langcodes==3.3.0
     # via courlan
@@ -234,6 +243,7 @@ regex==2023.10.3
 requests==2.31.0
     # via
     #   cassio
+    #   cohere
     #   gradio
     #   gradio-client
     #   huggingface-hub
@@ -308,6 +318,7 @@ tzlocal==5.2
     # via dateparser
 urllib3==2.0.7
     # via
+    #   cohere
     #   courlan
     #   htmldate
     #   requests
@@ -321,4 +332,6 @@ websockets==11.0.3
 yarl==1.9.2
     # via aiohttp
 zipp==3.17.0
-    # via importlib-resources
+    # via
+    #   importlib-metadata
+    #   importlib-resources

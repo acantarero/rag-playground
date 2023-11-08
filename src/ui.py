@@ -31,7 +31,11 @@ def scrape_webpage(url):
     return text
 
 def on_llm_choice_change(llm_choice):
-    if llm_choice in ["openai", "anyscale_llama2_70b_chat"]:
+    if llm_choice in [
+        "openai_gpt_35_turbo", 
+        "openai_gpt_4",        
+        "anyscale_llama2_70b_chat",
+        "anyscale_mistral_7b_instruct"]:
         return {
             llm_params: gr.Row(visible=True),
         }
@@ -143,8 +147,10 @@ with gr.Blocks() as playground:
         llm_choice = gr.Dropdown(
             label="Generation model (LLM)", 
             choices=[
-                ("OpenAI", "openai"),
-                ("Anyscale - Llama2 70B Chat", "anyscale_llama2_70b_chat")
+                ("OpenAI - GPT 3.5 Turbo", "openai_gpt_35_turbo"),
+                ("OpenAI - GPT 4", "openai_gpt_4"),
+                ("Anyscale - Llama2 70B Chat", "anyscale_llama2_70b_chat"),
+                ("Anyscale - Mistral 7B Instruct", "anyscale_mistral_7b_instruct"),
             ], 
             type="value",
         )
@@ -154,7 +160,7 @@ with gr.Blocks() as playground:
 
         embedding_choice = gr.Dropdown(
             label="Embedding model", 
-            choices=[("OpenAI", "openai")], 
+            choices=[("OpenAI - text-embedding-ada-002", "openai")], 
             type="value",
         )
 

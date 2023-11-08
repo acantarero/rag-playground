@@ -53,9 +53,8 @@ class Astra:
         self, 
         embedding_model: str,
         embedding_api_key:str,
-    ) -> None:
-               
-        logger.info("In store chunks.")
+    ) -> None:             
+      
         gr.Info("Adding chunks to Astra DB.")
 
         embed_model = self._create_embedding_model(embedding_model, embedding_api_key)

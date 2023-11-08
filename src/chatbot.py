@@ -1,12 +1,12 @@
 import cassio
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.llms import OpenAI
+from langchain.llms import Anyscale, OpenAI
 from langchain.prompts import PromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 
 from langchain.vectorstores import Cassandra
 
 from loguru import logger
+import os
 from time import time
 
 from src.astra import Astra
@@ -17,13 +17,28 @@ class Chatbot:
     def __init__(self, state: State, db: Astra) -> None:
         self.state = state
         self.db = db
+
+    def _create_llm(self, model: str, api_key: str):
+        if model == "openai":
+            logger.info("Using OpenAI LLM.")
+            try:
+                return OpenAI(openai_api_key=api_key)
+            except Exception as e:
+                raise ValueError("Invalid OpenAI API key.")
+        elif model == "anyscale_llama2_70b_chat":
+            logger.info("Using anyscale Llama-2-70b-chat-hf model.")
+            os.environ["ANYSCALE_API_KEY"] = api_key           
+            return Anyscale(model_name="meta-llama/Llama-2-70b-chat-hf")
+        else:
+            raise ValueError(f"Invalid LLM. Set on models tab.")
+
     
     def respond(
         self, 
         history, 
         prompt_input, 
-        model, 
-        api_key, 
+        generate_model, 
+        generate_api_key, 
         embedding_model, 
         embedding_api_key
     ):
@@ -40,16 +55,9 @@ class Chatbot:
             input_variables=input_variables,
         )
 
-        if model == "openai":
-            try:
-                llm = OpenAI(openai_api_key=api_key)
-            except Exception as e:
-                raise ValueError("Invalid OpenAI API key.")
-        else:
-            raise ValueError(f"Invalid LLM. Set on models tab.")
-
         embed_model = self.db._create_embedding_model(embedding_model, embedding_api_key)
         vectorstore = self.db._create_vectorstore(embed_model)
+        llm = self._create_llm(generate_model, generate_api_key)
 
         question = history[-1][0]
 

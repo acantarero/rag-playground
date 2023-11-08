@@ -31,13 +31,13 @@ def scrape_webpage(url):
     return text
 
 def on_llm_choice_change(llm_choice):
-    if llm_choice == "openai":
+    if llm_choice in ["openai", "anyscale_llama2_70b_chat"]:
         return {
-            llm_openai_params: gr.Row(visible=True),
+            llm_params: gr.Row(visible=True),
         }
     else:
         return {
-            llm_openai_params: gr.Row(visible=False),
+            llm_params: gr.Row(visible=False),
         }
     
 def on_embedding_choice_change(embedding_choice):
@@ -142,12 +142,15 @@ with gr.Blocks() as playground:
         gr.Markdown("Select the language models to use.")
         llm_choice = gr.Dropdown(
             label="Generation model (LLM)", 
-            choices=[("OpenAI", "openai")], 
+            choices=[
+                ("OpenAI", "openai"),
+                ("Anyscale - Llama2 70B Chat", "anyscale_llama2_70b_chat")
+            ], 
             type="value",
         )
 
-        with gr.Row(visible=False) as llm_openai_params:
-            llm_api_key = gr.Textbox(label=f"OpenAI API Key", lines=1)
+        with gr.Row(visible=False) as llm_params:
+            llm_api_key = gr.Textbox(label=f"API Key", lines=1)
 
         embedding_choice = gr.Dropdown(
             label="Embedding model", 
@@ -166,7 +169,7 @@ with gr.Blocks() as playground:
         chatbox
     )
     
-    llm_choice.change(on_llm_choice_change, llm_choice, [llm_openai_params])
+    llm_choice.change(on_llm_choice_change, llm_choice, [llm_params])
     embedding_choice.change(on_embedding_choice_change, embedding_choice, [embedding_openai_params])
 
     add_chunks_btn.click(db.store_chunks, [embedding_choice, embedding_api_key])

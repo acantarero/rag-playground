@@ -1,7 +1,10 @@
 import cassio
-from langchain.vectorstores import Cassandra
-from langchain.schema.embeddings import Embeddings
 from langchain.embeddings import CohereEmbeddings, OpenAIEmbeddings
+from langchain.prompts.example_selector import MaxMarginalRelevanceExampleSelector
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import CohereRerank
+from langchain.schema.embeddings import Embeddings
+from langchain.vectorstores import Cassandra
 
 import gradio as gr
 
@@ -43,8 +46,6 @@ class Astra:
                 logger.warning(f"{e}")
                 raise ValueError("Invalid OpenAI API key.")
 
-        # TODO: support for v3 cohere models has been merged to langchain master
-        #       but not in the module yet  
         elif embedding_model == "cohere_english_3":
             try:
                 return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-english-v3.0")
@@ -76,9 +77,51 @@ class Astra:
         else:
             raise ValueError(f"Invalid embedding model. Set on models tab.")
 
+    def get_relevant_documents_reranker(
+            self, 
+            query, 
+            embedding_model, 
+            embedding_api_key, 
+            reranker,
+            api_key,
+            n=8):
+        
+        embed_model = self._create_embedding_model(embedding_model, embedding_api_key)
+        self.vectorstore = self._create_vectorstore(embed_model)
+        retriever = self.vectorstore.as_retriever()
+
+        docs = []
+        if reranker == "cohere":
+            compressor = CohereRerank(
+                cohere_api_key=api_key, 
+                user_agent="rag-playground",
+                top_n=n,
+            )
+            compression_retriever = ContextualCompressionRetriever(
+                base_compressor=compressor, base_retriever=retriever
+            )
+            docs = compression_retriever.get_relevant_documents(query)
+
+        elif reranker == "mmr":
+            pass
+
+        elif reranker == "none":
+            docs = ["No reranking"]
+
+        return "\n\n".join([str(_) for _ in docs])
+        
+
+    def get_relevant_documents(self, query, embedding_model, embedding_api_key, n=8):
+        embed_model = self._create_embedding_model(embedding_model, embedding_api_key)
+        self.vectorstore = self._create_vectorstore(embed_model)
+
+        retriever = self.vectorstore.as_retriever(search_kwargs={"k": n})
+        docs = retriever.get_relevant_documents(query)
+
+        return "\n\n".join([str(_) for _ in docs])
+
     def get_vectorstore(self):
         return self.vectorstore
-
 
     def store_chunks(
         self, 

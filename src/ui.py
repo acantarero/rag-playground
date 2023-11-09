@@ -63,7 +63,17 @@ def on_embedding_choice_change(embedding_choice):
 def on_chunking_choice_change(chunking_choice):
     app_state.set_chunking_method(chunking_choice)
 
-with gr.Blocks() as playground:
+def on_reranker_change(reranker):
+    if reranker == "cohere":
+        return {
+            reranker_params: gr.Row(visible=True),
+        }
+    else:
+        return {
+            reranker_params: gr.Row(visible=False),
+        }
+
+with gr.Blocks(title="RAG Playground") as playground:
     gr.Markdown("""# RAG Playground""")
 
     with gr.Tab("Overview"):
@@ -146,7 +156,27 @@ with gr.Blocks() as playground:
 
        
     with gr.Tab("Retrieve"):
-        gr.Markdown("Coming soon.")
+        gr.Markdown("Retrieve documents based on a query.  Rerank the results.")
+
+        reranker = gr.Dropdown(
+            label="Reranker",
+            choices=[
+                ("None", "none"),
+                ("MMR", "mmr"),
+                ("Cohere", "cohere"),
+            ],
+            value="none",
+        )
+
+        with gr.Row(visible=False) as reranker_params:
+            reranker_api_key = gr.Textbox(label="API Key", lines=1)
+
+        retrieval_query = gr.Textbox(label="Query", lines=5, placeholder="Enter a query.")
+        retrieve_btn = gr.Button(value="Retrieve")
+
+        with gr.Row():
+            retrieval_results = gr.Textbox(label="Retrieved Results", lines=20)
+            reranked_results = gr.Textbox(label="Reranked Results", lines=20)
 
     with gr.Tab("Models"):
         gr.Markdown("Select the language models to use.")
@@ -191,3 +221,8 @@ with gr.Blocks() as playground:
     embedding_choice.change(on_embedding_choice_change, embedding_choice, [embedding_api_params])
 
     add_chunks_btn.click(db.store_chunks, [embedding_choice, embedding_api_key])
+
+    # Retriever actions
+    reranker.change(on_reranker_change, reranker, [reranker_params])
+    retrieve_btn.click(db.get_relevant_documents, [retrieval_query, embedding_choice, embedding_api_key], retrieval_results)
+    retrieve_btn.click(db.get_relevant_documents_reranker, [retrieval_query, embedding_choice, embedding_api_key, reranker, reranker_api_key], reranked_results)

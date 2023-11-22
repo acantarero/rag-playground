@@ -1,7 +1,3 @@
-import os
-
-from src.astra import Astra
-
 class State:
     # This class preserves state across tabs in the gradio app
 
@@ -10,8 +6,6 @@ class State:
         self.chunks = None
         self.document_text = None
         self.llm = None
-        self.token = os.environ["ASTRA_TOKEN"]
-        self.database_id = os.environ["ASTRA_DATABASE_ID"]
 
     def set_chunking_method(self, method):
         self.chunking_method = method

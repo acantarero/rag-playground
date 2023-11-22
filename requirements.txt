@@ -10,7 +10,6 @@ aiohttp==3.8.6
     # via
     #   cohere
     #   langchain
-    #   openai
 aiosignal==1.3.1
     # via aiohttp
 altair==5.1.2
@@ -21,8 +20,12 @@ anyio==3.7.1
     # via
     #   fastapi
     #   httpcore
+    #   httpx
     #   langchain
+    #   openai
     #   starlette
+astrapy==0.6.1
+    # via -r requirements.in
 async-timeout==4.0.3
     # via
     #   aiohttp
@@ -37,7 +40,7 @@ backoff==2.2.1
 cassandra-driver==3.28.0
     # via cassio
 cassio==0.1.3
-    # via -r requirements.in
+    # via astrapy
 certifi==2023.7.22
     # via
     #   httpcore
@@ -69,6 +72,8 @@ dataclasses-json==0.6.1
     # via langchain
 dateparser==1.1.8
     # via htmldate
+distro==1.8.0
+    # via openai
 exceptiongroup==1.1.3
     # via anyio
 fastapi==0.104.1
@@ -99,18 +104,27 @@ h11==0.14.0
     # via
     #   httpcore
     #   uvicorn
+h2==4.1.0
+    # via httpx
+hpack==4.0.0
+    # via h2
 htmldate==1.5.2
     # via trafilatura
 httpcore==0.18.0
     # via httpx
-httpx==0.25.0
+httpx[http2]==0.25.1
     # via
+    #   astrapy
     #   gradio
     #   gradio-client
+    #   httpx
+    #   openai
 huggingface-hub==0.18.0
     # via
     #   gradio
     #   gradio-client
+hyperframe==6.0.1
+    # via h2
 idna==3.4
     # via
     #   anyio
@@ -139,11 +153,11 @@ justext==3.0.0
     # via trafilatura
 kiwisolver==1.4.5
     # via matplotlib
-langchain==0.0.332
+langchain==0.0.339
     # via -r requirements.in
 langcodes==3.3.0
     # via courlan
-langsmith==0.0.56
+langsmith==0.0.66
     # via langchain
 loguru==0.7.2
     # via -r requirements.in
@@ -179,7 +193,7 @@ numpy==1.26.1
     #   langchain
     #   matplotlib
     #   pandas
-openai==0.28.1
+openai==1.3.4
     # via -r requirements.in
 orjson==3.9.10
     # via gradio
@@ -205,6 +219,7 @@ pydantic==2.4.2
     #   gradio
     #   langchain
     #   langsmith
+    #   openai
 pydantic-core==2.10.1
     # via pydantic
 pydub==0.25.1
@@ -249,7 +264,6 @@ requests==2.31.0
     #   huggingface-hub
     #   langchain
     #   langsmith
-    #   openai
     #   tiktoken
 rich==13.6.0
     # via typer
@@ -302,6 +316,7 @@ typing-extensions==4.8.0
     #   gradio
     #   gradio-client
     #   huggingface-hub
+    #   openai
     #   pydantic
     #   pydantic-core
     #   pypdf

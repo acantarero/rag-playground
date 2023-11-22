@@ -1,10 +1,10 @@
-import cassio
+from astrapy.db import AstraDB
 from langchain.embeddings import CohereEmbeddings, OpenAIEmbeddings
 from langchain.prompts.example_selector import MaxMarginalRelevanceExampleSelector
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CohereRerank
 from langchain.schema.embeddings import Embeddings
-from langchain.vectorstores import Cassandra
+from langchain.vectorstores import AstraDB as LCAstraDB
 
 import gradio as gr
 
@@ -12,33 +12,53 @@ from loguru import logger
 import os
 import time
 
-# TODO: this class isn't really a proper astra wrapper, instead its an embedding generator
-# with hard coded astra
+model_to_dimension = {
+    "cohere_english_3": 1024,
+    "cohere_english_light_3": 384,
+    "cohere_multilingual_3": 1024,
+    "cohere_multilingual_light_3": 384,
+    "openai": 1536,
+}
+
+# TODO: this class isn't really a proper astra wrapper, blended astra + embedding model concepts
+#       should separate these out
 class Astra:
     def __init__(self, state) -> None:
-        self.keyspace = os.environ["ASTRA_KEYSPACE"]
-        self.database_id = os.environ["ASTRA_DATABASE_ID"]
-        self.table = os.environ["ASTRA_TABLE"]
         self.token = os.environ["ASTRA_TOKEN"]
-        self.session = self._connect_to_astra()
+        self.astra_endpoint = os.environ["ASTRA_API_ENDPOINT"]
+        self.collection_name = os.environ["ASTRA_COLLECTION"]
+        self.db = AstraDB(token=self.token, api_endpoint=self.astra_endpoint)
         self.vectorstore = None
+        self.current_collection_model = None
         self.state = state
     
     def _create_vectorstore(self, embed_model):
         # user can change embedding model in UI, so init this at runtime of task
-        return Cassandra(
+        return LCAstraDB(
             embedding=embed_model,
-            session=self.session,
-            keyspace=self.keyspace,
-            table_name=self.table,
+            collection_name=self.collection_name,
+            token=self.token,
+            api_endpoint=self.astra_endpoint,
         )
 
-    def _connect_to_astra(self):
-        cassio.init(token=self.token, database_id=self.database_id)
-        logger.info(f"Connected to Astra DB: {self.database_id}")
-        return cassio.config.resolve_session()    
-
     def _create_embedding_model(self, embedding_model: str, embedding_api_key: str) -> Embeddings:
+
+        # TODO: collection creation should probably not be buried in this method
+        collections = self.db.get_collections()
+        if self.collection_name not in collections["status"]["collections"]:
+            self.db.create_collection(
+                self.collection_name, 
+                dimension=model_to_dimension[embedding_model], 
+                metric="cosine")
+            self.current_collection_model = embedding_model
+
+        if embedding_model != self.current_collection_model:
+            self.db.delete_collection(collection_name=self.collection_name)
+            self.db.create_collection(
+                self.collection_name, 
+                dimension=model_to_dimension[embedding_model], 
+                metric="cosine")
+
         if embedding_model == "openai":
             try:     
                 return OpenAIEmbeddings(openai_api_key=embedding_api_key)
@@ -103,7 +123,15 @@ class Astra:
             docs = compression_retriever.get_relevant_documents(query)
 
         elif reranker == "mmr":
-            pass
+            example_selector = MaxMarginalRelevanceExampleSelector(
+                fetch_k=30,
+                k=n,
+                vectorstore=self.vectorstore,
+            )
+            docs = retriever.get_relevant_documents(query)
+            logger.info("\n\n".join([str(_) for _ in docs]))
+            docs = example_selector.select_examples(docs)
+            docs = docs[:n]
 
         elif reranker == "none":
             docs = ["No reranking"]
@@ -142,11 +170,11 @@ class Astra:
         end = time.time() 
 
         gr.Info(f"Stored {len(chunks)} embeddings. Avg time per embedding {(end-start)/len(chunks)} seconds.")
-        logger.info(f"Added {len(chunks)} embeddings to table: {self.table}.")
+        logger.info(f"Added {len(chunks)} embeddings to collection: {self.collection_name}.")
         logger.info(f"Average time per embedding {(end-start)/len(chunks)} seconds.")
 
-    def delete_table(self) -> None:
-        self.session.execute(f"DROP TABLE IF EXISTS {self.keyspace}.{self.table};") 
+    def delete_collection(self) -> None:
+        self.db.delete_collection(collection_name=self.collection_name) 
 
-        gr.Info("Deleted embeddings table.")
-        logger.info(f"Deleted table: {self.table}.")  
+        gr.Info("Deleted embeddings collection.")
+        logger.info(f"Deleted collection: {self.collection_name}.")  

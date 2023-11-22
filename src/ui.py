@@ -152,7 +152,7 @@ with gr.Blocks(title="RAG Playground") as playground:
         # store tab actions
         chunking_choice.change(on_chunking_choice_change, chunking_choice)
         chunk_btn.click(chunker.chunk, [chunk_size, overlap], show_chunks)
-        delete_btn.click(db.delete_table)
+        delete_btn.click(db.delete_collection)
 
        
     with gr.Tab("Retrieve"):

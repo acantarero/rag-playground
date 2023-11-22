@@ -41,8 +41,13 @@ class Astra:
             api_endpoint=self.astra_endpoint,
         )
 
-    def _create_embedding_model(self, embedding_model: str, embedding_api_key: str) -> Embeddings:
+    def _create_embedding_model(self, embedding_model: str) -> Embeddings:
 
+        if type(embedding_model) is list:
+            gr.Info("Choose embedding model on models tab.")
+            return None
+        
+        print(embedding_model)
         # TODO: collection creation should probably not be buried in this method
         collections = self.db.get_collections()
         if self.collection_name not in collections["status"]["collections"]:
@@ -61,35 +66,35 @@ class Astra:
 
         if embedding_model == "openai":
             try:     
-                return OpenAIEmbeddings(openai_api_key=embedding_api_key)
+                return OpenAIEmbeddings(openai_api_key=os.environ["OPENAI_API_KEY"])
             except Exception as e:
                 logger.warning(f"{e}")
                 raise ValueError("Invalid OpenAI API key.")
 
         elif embedding_model == "cohere_english_3":
             try:
-                return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-english-v3.0")
+                return CohereEmbeddings(cohere_api_key=os.environ["COHERE_API_KEY"], model="embed-english-v3.0")
             except Exception as e:
                 logger.warning(f"{e}")
                 raise ValueError("Invalid Cohere API key.")
             
         elif embedding_model == "cohere_english_light_3":
             try:
-                return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-english-light-v3.0")
+                return CohereEmbeddings(cohere_api_key=os.environ["COHERE_API_KEY"], model="embed-english-light-v3.0")
             except Exception as e:
                 logger.warning(f"{e}")
                 raise ValueError("Invalid Cohere API key.")
             
         elif embedding_model == "cohere_multilingual_3":
             try:
-                return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-multilingual-v3.0")
+                return CohereEmbeddings(cohere_api_key=os.environ["COHERE_API_KEY"], model="embed-multilingual-v3.0")
             except Exception as e:
                 logger.warning(f"{e}")
                 raise ValueError("Invalid Cohere API key.")
             
         elif embedding_model == "cohere_multilingual_light_3":
             try:
-                return CohereEmbeddings(cohere_api_key=embedding_api_key, model="embed-multilingual-light-v3.0")
+                return CohereEmbeddings(cohere_api_key=["COHERE_API_KEY"], model="embed-multilingual-light-v3.0")
             except Exception as e:
                 logger.warning(f"{e}")
                 raise ValueError("Invalid Cohere API key.")
@@ -99,21 +104,19 @@ class Astra:
 
     def get_relevant_documents_reranker(
             self, 
-            query, 
-            embedding_model, 
-            embedding_api_key, 
-            reranker,
-            api_key,
+            query: str, 
+            embedding_model: str, 
+            reranker: str,
             n=8):
         
-        embed_model = self._create_embedding_model(embedding_model, embedding_api_key)
+        embed_model = self._create_embedding_model(embedding_model)
         self.vectorstore = self._create_vectorstore(embed_model)
         retriever = self.vectorstore.as_retriever()
 
         docs = []
         if reranker == "cohere":
             compressor = CohereRerank(
-                cohere_api_key=api_key, 
+                cohere_api_key=os.environ["COHERE_API_KEY"], 
                 user_agent="rag-playground",
                 top_n=n,
             )
@@ -139,8 +142,8 @@ class Astra:
         return "\n\n".join([str(_) for _ in docs])
         
 
-    def get_relevant_documents(self, query, embedding_model, embedding_api_key, n=8):
-        embed_model = self._create_embedding_model(embedding_model, embedding_api_key)
+    def get_relevant_documents(self, query, embedding_model: str, n=8):
+        embed_model = self._create_embedding_model(embedding_model)
         self.vectorstore = self._create_vectorstore(embed_model)
 
         retriever = self.vectorstore.as_retriever(search_kwargs={"k": n})
@@ -154,12 +157,16 @@ class Astra:
     def store_chunks(
         self, 
         embedding_model: str,
-        embedding_api_key:str,
     ) -> None:             
       
         gr.Info("Adding chunks to Astra DB.")
 
-        embed_model = self._create_embedding_model(embedding_model, embedding_api_key)
+        embed_model = self._create_embedding_model(embedding_model)
+
+        if embed_model is None:
+            gr.Info("Choose embedding model on models tab.")
+            return None
+
         self.vectorstore = self._create_vectorstore(embed_model)
 
         logger.info("Adding document to Astra DB.")

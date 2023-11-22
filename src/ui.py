@@ -29,49 +29,10 @@ def scrape_webpage(url):
     text = trafilatura.extract(downloaded)
     app_state.set_document_text(text)
     return text
-
-def on_llm_choice_change(llm_choice):
-    if llm_choice in [
-        "openai_gpt_35_turbo", 
-        "openai_gpt_4",        
-        "anyscale_llama2_70b_chat",
-        "anyscale_mistral_7b_instruct"]:
-        return {
-            llm_params: gr.Row(visible=True),
-        }
-    else:
-        return {
-            llm_params: gr.Row(visible=False),
-        }
-    
-def on_embedding_choice_change(embedding_choice):
-    if embedding_choice in [
-        "openai",
-        "cohere_english_3",
-        "cohere_english_light_3",
-        "cohere_multilingual_3",
-        "cohere_multilingual_light_3",
-    ]:
-        return {
-            embedding_api_params: gr.Row(visible=True),
-        }
-    else:
-        return {
-            embedding_api_params: gr.Row(visible=False),
-        }
     
 def on_chunking_choice_change(chunking_choice):
     app_state.set_chunking_method(chunking_choice)
 
-def on_reranker_change(reranker):
-    if reranker == "cohere":
-        return {
-            reranker_params: gr.Row(visible=True),
-        }
-    else:
-        return {
-            reranker_params: gr.Row(visible=False),
-        }
 
 with gr.Blocks(title="RAG Playground") as playground:
     gr.Markdown("""# RAG Playground""")
@@ -168,9 +129,6 @@ with gr.Blocks(title="RAG Playground") as playground:
             value="none",
         )
 
-        with gr.Row(visible=False) as reranker_params:
-            reranker_api_key = gr.Textbox(label="API Key", lines=1)
-
         retrieval_query = gr.Textbox(label="Query", lines=5, placeholder="Enter a query.")
         retrieve_btn = gr.Button(value="Retrieve")
 
@@ -191,9 +149,6 @@ with gr.Blocks(title="RAG Playground") as playground:
             type="value",
         )
 
-        with gr.Row(visible=False) as llm_params:
-            llm_api_key = gr.Textbox(label=f"API Key", lines=1)
-
         embedding_choice = gr.Dropdown(
             label="Embedding model", 
             choices=[
@@ -206,23 +161,15 @@ with gr.Blocks(title="RAG Playground") as playground:
             type="value",
         )
 
-        with gr.Row(visible=False) as embedding_api_params:
-            embedding_api_key = gr.Textbox(label=f"API Key", lines=1)
-
-
     # cross tab actions
     textbox.submit(user_chatbot, [textbox, chatbox], [textbox, chatbox], queue=False).then(
         cb.respond, 
-        [chatbox, prompt, llm_choice, llm_api_key, embedding_choice, embedding_api_key], 
+        [chatbox, prompt, llm_choice, embedding_choice], 
         chatbox
     )
     
-    llm_choice.change(on_llm_choice_change, llm_choice, [llm_params])
-    embedding_choice.change(on_embedding_choice_change, embedding_choice, [embedding_api_params])
-
-    add_chunks_btn.click(db.store_chunks, [embedding_choice, embedding_api_key])
+    add_chunks_btn.click(db.store_chunks, [embedding_choice])
 
     # Retriever actions
-    reranker.change(on_reranker_change, reranker, [reranker_params])
-    retrieve_btn.click(db.get_relevant_documents, [retrieval_query, embedding_choice, embedding_api_key], retrieval_results)
-    retrieve_btn.click(db.get_relevant_documents_reranker, [retrieval_query, embedding_choice, embedding_api_key, reranker, reranker_api_key], reranked_results)
+    retrieve_btn.click(db.get_relevant_documents, [retrieval_query, embedding_choice], retrieval_results)
+    retrieve_btn.click(db.get_relevant_documents_reranker, [retrieval_query, embedding_choice, reranker], reranked_results)
